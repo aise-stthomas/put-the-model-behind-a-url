@@ -180,6 +180,53 @@ Restore the limit before you leave, or remove the function:
   and its cold starts have mattered?
 - the repository, with its fixtures
 
+## A short primer: serverless functions
+
+**What it is.** A function you upload, with no server to run. The platform (here AWS
+Lambda) keeps your code and, when a request arrives, starts a small sandbox, runs your
+handler once for that request, and keeps the sandbox around for a while in case another
+request comes. You are billed per request and per millisecond of running time, at the
+memory size you chose. Nothing runs, and nothing is billed, when nothing is calling it.
+
+**Why we use it.** Three reasons that matter for a model call:
+
+- **Placement without a machine.** The model call moves off the request path onto its
+  own compute with no server to provision, patch, or keep alive. The web server hands off
+  and returns.
+- **Scaling is per request.** A thousand simultaneous calls get up to a thousand
+  sandboxes, with no autoscaler to configure. The ceiling is the account's concurrency
+  limit, and the model's quota, whichever is lower.
+- **Idle costs nothing.** A support desk at 0.4 tickets a second is idle most of the
+  day. Rented by the millisecond, that is a few dollars a month; a machine that is always
+  on is not.
+
+**Cold and warm.** A **cold start** is the first request into a new sandbox: the platform
+has to create it, load the runtime, and import your code, and for this function the
+import of the model's SDK is most of that second and a half. A **warm** request reuses a
+sandbox that already did all of that, so only your handler runs. Warm sandboxes are kept
+for minutes of idleness, not hours; a spike creates many new ones at once, each cold. That
+is why Part 4 measures the two separately, and why `--recycle` exists: changing the
+function's configuration replaces every sandbox, so the next call is cold on demand.
+
+**The time limit.** Every invocation has a maximum running time you set, from one second
+to fifteen minutes. When it is reached the sandbox is killed mid-instruction: no cleanup,
+no partial result, the caller gets an error. A model call that takes seconds can cross a
+short limit; a chain of them certainly will. That is Part 5, and it is the reason a
+system that does more than one call per request has to keep its state somewhere that
+survives the death of the process running it.
+
+**What a function is not.** It does not hold a connection open, so nothing can push to
+it; it does not keep state between requests except by accident (a warm sandbox's memory,
+which you cannot rely on); and it cannot run longer than its limit. Anything that needs
+those, a long-running worker, a queue consumer that never stops, a stateful loop, lives
+elsewhere. Later in the course those parts arrive one at a time, and each one is a
+placement decision like the one this lab made.
+
+**The URL.** A function URL is a public HTTPS address wired straight to one function,
+with no gateway in between. The Learner Lab requires callers to sign requests with AWS
+credentials, which is why `record.py` and `call.sh` sign; on your own account you could
+make it anonymous, and then the token header would be the only lock.
+
 ## If something breaks
 
 | Symptom | What it is |
