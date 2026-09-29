@@ -19,6 +19,9 @@ if _ROOT not in sys.path:
 
 if __name__ == "__main__":
     import uvicorn
+    # Local runs need no token: the deployed function enforces LAB_TOKEN; here it is cleared before
+    # the app loads .env (load_dotenv never overrides a variable that is already set).
+    os.environ["LAB_TOKEN"] = ""
     port = int(os.environ.get("PORT", "9000"))
     print(f"provider: {os.environ.get('PROVIDER', 'gemini')} · try it at http://127.0.0.1:{port}/docs")
     uvicorn.run("src.function.app:app", host="127.0.0.1", port=port, log_level="warning")

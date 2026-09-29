@@ -56,7 +56,8 @@ uv run score.py local-url
 ```
 
 Open http://127.0.0.1:9000/docs, expand **POST /triage**, and send the example request
-from the browser: the same call `record.py` makes, one at a time. Same harness, same
+from the browser: the same call `record.py` makes, one at a time. No token is needed
+locally; only the deployed function checks one. Same harness, same
 report, the model call one HTTP hop away. Stop the server when you are done (Ctrl-C).
 With your key in `.env` and no `PROVIDER=fake`, the same server calls the real model. Then record the real baseline in this process, with your key, so
 there is something to compare against:
