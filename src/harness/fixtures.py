@@ -1,4 +1,4 @@
-"""Fixtures: every model output, saved as it lands, under fixtures/<condition>/run-<k>.jsonl.
+"""Fixtures: every model output, saved as it lands, under data/fixtures/<condition>/run-<k>.jsonl.
 
 Record once, score many times. Nothing in here calls the model.
 """
@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-FIXTURES = Path("fixtures")
+FIXTURES = Path("data/fixtures")
 
 
 def run_path(condition: str, run: int) -> Path:
@@ -15,7 +15,7 @@ def run_path(condition: str, run: int) -> Path:
 
 
 def judge_path(condition: str, run_name: str) -> Path:
-    """The judge's verdicts for one run: fixtures/<condition>/judge-<run>.jsonl."""
+    """The judge's verdicts for one run: data/fixtures/<condition>/judge-<run>.jsonl."""
     return FIXTURES / condition / f"judge-{run_name}.jsonl"
 
 

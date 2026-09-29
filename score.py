@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 
-from harness import fixtures, golden, report
+from src.harness import fixtures, golden, report
 
 
 def main() -> None:

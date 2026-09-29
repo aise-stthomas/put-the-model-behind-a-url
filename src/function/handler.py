@@ -1,7 +1,7 @@
 """The triage step, behind a URL.
 
 This file is the whole function. It runs on AWS Lambda (handler(event, context)), and it
-runs on your laptop the same way (python function/handler.py, or function/local_server.py).
+runs on your laptop the same way (python src/function/handler.py, or src/function/local_server.py).
 Everything it does:
 
     check the shared token  ->  read the ticket and the account from the request body
@@ -9,8 +9,8 @@ Everything it does:
     plus what only the function can know: was this a cold start, how long did the
     function itself take, how long did importing everything take.
 
-The model call, the retries and the fake provider are unchanged: system/triage.py and
-system/plumbing.py are the same files as in the project repository.
+The model call, the retries and the fake provider are unchanged: src/system/triage.py and
+src/system/plumbing.py are the same files as in the project repository.
 """
 from __future__ import annotations
 
@@ -20,12 +20,14 @@ import os
 import time
 
 import sys
-if not os.path.isdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "system")):
-    # on your laptop this file lives in function/; on Lambda it sits beside system/
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# this file is src/function/handler.py; make the repository root importable so "src.system" resolves
+# both on your laptop and inside the deployment package, which ships src/ as-is
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 _T0 = time.perf_counter()
-from system.triage import triage  # noqa: E402  (import time is part of the cold start)
+from src.system.triage import triage  # noqa: E402  (import time is part of the cold start)
 from google import genai  # noqa: E402, F401  (force the SDK to load now, not on the first call)
 
 INIT_MS = round((time.perf_counter() - _T0) * 1000)
@@ -78,6 +80,8 @@ if __name__ == "__main__":
     # Rung 1: run the handler as a plain function, on your laptop, with the fake provider.
     os.environ.setdefault("PROVIDER", "fake")
     event = json.load(open(os.path.join(os.path.dirname(__file__), "sample-event.json")))
+    if os.environ.get("LAB_TOKEN"):  # once deploy.sh has made a token, present it, as call.sh and record.py do
+        event["headers"]["x-lab-token"] = os.environ["LAB_TOKEN"]
     out = handler(event, None)
     print(out["statusCode"])
     print(json.dumps(json.loads(out["body"]), indent=2))

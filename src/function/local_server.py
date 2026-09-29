@@ -1,7 +1,7 @@
 """Rung 2 without Docker: serve function/handler.py on a local URL.
 
-    uv run function/local_server.py            # http://127.0.0.1:9000, real model (needs the key)
-    PROVIDER=fake uv run function/local_server.py
+    uv run src/function/local_server.py            # http://127.0.0.1:9000, real model (needs the key)
+    PROVIDER=fake uv run src/function/local_server.py
 
 Then, in another terminal:  uv run record.py --provider http --url http://127.0.0.1:9000 --runs 1
 
@@ -16,8 +16,8 @@ import os
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from function.handler import handler  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from src.function.handler import handler  # noqa: E402
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -39,5 +39,5 @@ class _Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "9000"))
-    print(f"serving function/handler.py at http://127.0.0.1:{port}  (provider: {os.environ.get('PROVIDER', 'gemini')})")
+    print(f"serving src/function/handler.py at http://127.0.0.1:{port}  (provider: {os.environ.get('PROVIDER', 'gemini')})")
     HTTPServer(("127.0.0.1", port), _Handler).serve_forever()

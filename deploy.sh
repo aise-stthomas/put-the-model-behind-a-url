@@ -55,8 +55,8 @@ rm -rf build && mkdir -p build/pkg
 uv pip install --quiet --target build/pkg \
   --python-platform x86_64-manylinux_2_28 --python-version 3.12 \
   "google-genai>=2.23" "python-dotenv>=1.0"
-cp -R system build/pkg/system
-cp function/handler.py build/pkg/handler.py
+cp -R src build/pkg/src
+find build/pkg/src -name "__pycache__" -type d -prune -exec rm -rf {} +
 ( cd build/pkg && zip -qr ../function.zip . -x '*.pyc' -x '*/__pycache__/*' )
 echo "  $(du -h build/function.zip | cut -f1) zipped, $(du -sh build/pkg | cut -f1) unpacked"
 
@@ -71,7 +71,7 @@ if aws lambda get-function --function-name "$FN" >/dev/null 2>&1; then
 else
   echo "creating $FN as $ROLE..."
   aws lambda create-function --function-name "$FN" \
-    --runtime python3.12 --architectures x86_64 --handler handler.handler \
+    --runtime python3.12 --architectures x86_64 --handler src.function.handler.handler \
     --role "$ROLE" --zip-file "fileb://build/function.zip" \
     --timeout "$TIMEOUT" --memory-size "$MEMORY" --environment "$ENV_VARS" >/dev/null
   aws lambda wait function-active --function-name "$FN"
@@ -98,6 +98,6 @@ echo
 echo "deployed: $FN   timeout ${TIMEOUT}s   memory ${MEMORY} MB"
 echo "url:      $URL   (saved to .env as LAB_URL)"
 echo
-echo "try it:   ./call.sh function/sample-event-body.json      (curl, signed with your session credentials)"
+echo "try it:   ./call.sh src/function/sample-event-body.json      (curl, signed with your session credentials)"
 echo "record:   uv run record.py --provider http --runs 3"
 echo "logs:     aws logs tail /aws/lambda/$FN --follow"

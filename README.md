@@ -13,8 +13,8 @@ moves.
 | | |
 |---|---|
 | **In class** | [LAB.md](LAB.md) — *put the model behind a URL* |
-| **The function** | [function/handler.py](function/handler.py) — the whole thing, one page |
-| **The golden set** | [golden/README.md](golden/README.md) |
+| **The function** | [src/function/handler.py](src/function/handler.py) — the whole thing, one page |
+| **The golden set** | [data/golden/README.md](data/golden/README.md) |
 
 ## What you need
 
@@ -34,7 +34,7 @@ git clone https://github.com/aise-stthomas/put-the-model-behind-a-url
 cd put-the-model-behind-a-url
 cp .env.example .env         # paste your Gemini key
 uv sync
-uv run function/handler.py   # the function, called as a plain function, with the fake provider
+uv run src/function/handler.py   # the function, called as a plain function, with the fake provider
 ```
 
 If that printed a decision and a `"function"` block with `"cold_start": true`, you are set.
@@ -43,7 +43,7 @@ If that printed a decision and a `"function"` block with `"cold_start": true`, y
 
 ```bash
 ./deploy.sh                                 # build the package, deploy, print the URL (saved to .env)
-uv run record.py --provider http --runs 3   # call the URL over the golden set; fixtures/http/
+uv run record.py --provider http --runs 3   # call the URL over the golden set; data/fixtures/http/
 uv run score.py local http                  # the same scorers as the project: nothing changed
 uv run latency.py http                      # cold start · warm p50 and p95 · errors
 ```
@@ -57,20 +57,24 @@ from your laptop.
 ## The files
 
 ```
-function/
-  handler.py          the function: token check → triage() → the record, plus cold-start and timing metadata
-  local_server.py     serves handler.py on http://127.0.0.1:9000, for testing the HTTP path with no AWS
-  sample-event.json   what a function URL delivers to the handler; handler.py uses it when run directly
-deploy.sh             builds the zip for Lambda's Linux, creates or updates the function, sets the URL
-call.sh               one signed curl to the deployed function
-teardown.sh           deletes the function and its URL
 record.py             CLI: run the suite, in this process or over HTTP; saves every call
 score.py              CLI: reads the fixtures and reports, per slice; never calls a model
 latency.py            CLI: the three numbers, per run, from the fixtures
-system/               the system under test, frozen. Deployed as-is.
-harness/              golden set loader, fixtures, scorers, the report
-golden/               the ten tickets and their accounts
-fixtures/             every recorded call, by condition and run. Committed.
+deploy.sh             builds the zip for Lambda's Linux (src/ plus dependencies), creates or updates the function, sets the URL
+call.sh               one signed curl to the deployed function
+teardown.sh           deletes the function and its URL; clears build/ and the URL from .env
+
+src/                  the code
+  system/             the system under test, frozen. Deployed as-is.
+  function/
+    handler.py        the function: token check → triage() → the record, plus cold-start and timing metadata
+    local_server.py   serves handler.py on http://127.0.0.1:9000, for testing the HTTP path with no AWS
+    sample-event.json what a function URL delivers to the handler; handler.py uses it when run directly
+  harness/            golden set loader, fixtures, scorers, the report
+
+data/                 the inputs and the outputs
+  golden/             the ten tickets and their accounts
+  fixtures/           every recorded call, by condition and run. Committed.
 ```
 
 ## What this is one instance of

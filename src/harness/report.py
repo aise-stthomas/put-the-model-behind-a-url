@@ -76,7 +76,7 @@ def summary(condition: str, runs: list[tuple[str, list[dict]]], tables: list[Tab
             continue
         fl = _floor(cells)
         print(f"  {tag:30s}{size[tag]:>8d}" + "".join(f"{_fmt(c):>8s}" for c in cells) + f"{'' if fl is None else str(fl) + ' pts':>8s}")
-    print("  (a slice is a tag on tickets in golden/golden.json; a cell is right / tickets in the slice)")
+    print("  (a slice is a tag on tickets in data/golden/golden.json; a cell is right / tickets in the slice)")
 
     # the other checks, one line each
     print("\nOTHER CHECKS  (all tickets, per run)")

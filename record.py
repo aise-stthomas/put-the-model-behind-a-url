@@ -1,13 +1,13 @@
 """Record: run the triage step over the golden set and keep every call.
 
-    uv run record.py --runs 1                       # local: the model called from this process -> fixtures/local/
-    uv run record.py --provider http --runs 3       # over HTTP: the deployed function -> fixtures/http/
+    uv run record.py --runs 1                       # local: the model called from this process -> data/fixtures/local/
+    uv run record.py --provider http --runs 3       # over HTTP: the deployed function -> data/fixtures/http/
     uv run record.py --provider http --url http://127.0.0.1:9000 --runs 1    # the local server
-    uv run record.py --provider fake --runs 1       # no key, NOT a model -> fixtures/fake/
+    uv run record.py --provider fake --runs 1       # no key, NOT a model -> data/fixtures/fake/
     uv run record.py --provider http --name http-3s --runs 2                 # any condition, named yourself
 
 The URL and the token come from .env (LAB_URL, LAB_TOKEN; deploy.sh writes them) or from
---url / --token. Writes fixtures/<condition>/run-<k>.jsonl, one line per call, as each
+--url / --token. Writes data/fixtures/<condition>/run-<k>.jsonl, one line per call, as each
 call lands. Resumable: a call already in the file is never made again.
 
 Over HTTP every record carries two clocks: the model's own latency, measured inside the
@@ -27,8 +27,8 @@ import urllib.request
 
 from dotenv import load_dotenv
 
-from harness import fixtures, golden
-from system import DEFAULT_MODEL, triage
+from src.harness import fixtures, golden
+from src.system import DEFAULT_MODEL, triage
 
 load_dotenv()
 

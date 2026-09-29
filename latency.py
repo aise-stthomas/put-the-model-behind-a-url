@@ -1,6 +1,6 @@
 """Latency: what the round trip cost, from the fixtures, per run.
 
-    uv run latency.py http           # every run under fixtures/http/
+    uv run latency.py http           # every run under data/fixtures/http/
     uv run latency.py http http-3s   # several conditions
 
 Three numbers per run: cold starts (how many, and how long they took), warm calls (median
@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import sys
 
-from harness import fixtures
+from src.harness import fixtures
 
 
 def pct(xs: list[int], q: float) -> int | None:
@@ -28,7 +28,7 @@ def main() -> None:
     for cond in conditions:
         runs = fixtures.runs(cond)
         if not runs:
-            print(f"no fixtures under fixtures/{cond}")
+            print(f"no fixtures under data/fixtures/{cond}")
             continue
         print(f"\n{'=' * 78}\n{cond.upper()}")
         for name, recs in runs:

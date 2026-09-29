@@ -36,11 +36,11 @@ Keep it; the lab's last question comes back to it.
 ## Part 1: run it here first
 
 ```bash
-uv run function/handler.py
+uv run src/function/handler.py
 ```
 
 That is the deployed function, called as a plain Python function with the fake provider.
-Read `function/handler.py` while it runs. It is one page: check a token, read the ticket
+Read `src/function/handler.py` while it runs. It is one page: check a token, read the ticket
 and the account from the request, call `triage()` exactly as `record.py` does, and return
 the record plus what only the function can know: whether this was a cold start, how long
 importing everything took, how long the function itself took.
@@ -48,7 +48,7 @@ importing everything took, how long the function itself took.
 Now serve it on a local URL and call it the way you will call the real one:
 
 ```bash
-PROVIDER=fake uv run function/local_server.py                  # terminal 1
+PROVIDER=fake uv run src/function/local_server.py              # terminal 1
 uv run record.py --provider http --url http://127.0.0.1:9000 --name local-url --runs 1   # terminal 2
 uv run score.py local-url
 ```
@@ -58,7 +58,7 @@ are done (Ctrl-C). Then record the real baseline in this process, with your key,
 there is something to compare against:
 
 ```bash
-uv run record.py --runs 1          # 10 calls, in this process → fixtures/local/
+uv run record.py --runs 1          # 10 calls, in this process → data/fixtures/local/
 ```
 
 ## Part 2: deploy it
@@ -70,12 +70,12 @@ Start a Learner Lab session, paste the CLI credentials into `~/.aws/credentials`
 ```
 
 Read what it prints. It installs the dependencies **for Lambda's Linux, not your laptop**,
-zips them with `system/` and the handler, creates the function under the lab's
+zips them with `src/`, creates the function under the lab's
 pre-made role with a 30-second time limit and 512 MB, gives it a URL, and saves the URL
 and a shared token to `.env`. About a minute. Then:
 
 ```bash
-./call.sh function/sample-event-body.json
+./call.sh src/function/sample-event-body.json
 ```
 
 A decision, from a machine that is not yours, with your Gemini key on it and not in the
@@ -86,7 +86,7 @@ call is signed with the same AWS session credentials `deploy.sh` used (`call.sh`
 ## Part 3: call it, and score it
 
 ```bash
-uv run record.py --provider http --runs 3     # 30 calls over the URL → fixtures/http/
+uv run record.py --provider http --runs 3     # 30 calls over the URL → data/fixtures/http/
 uv run score.py local http
 ```
 
@@ -132,7 +132,7 @@ uv run score.py http http-1s
 
 Every call comes back as `error`, and not after one second: the platform killed the
 function at one second, and the URL layer took another second or so to tell you. Look at
-one record in `fixtures/http-1s/run-1.jsonl`: what is in it, and what is not? The model
+one record in `data/fixtures/http-1s/run-1.jsonl`: what is in it, and what is not? The model
 may well have answered into the void; the money it proposed is nowhere.
 
 Now set the limit from your measurement instead of from a default: take the warm p95

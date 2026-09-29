@@ -1,11 +1,11 @@
-"""The golden set: tickets with the right answer attached, tagged by slice."""
+"""The golden set: tickets with the right answer attached, tagged by slice. Lives in data/golden/."""
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-GOLDEN = Path("golden/golden.json")
-ACCOUNTS = Path("golden/accounts.json")
+GOLDEN = Path("data/golden/golden.json")
+ACCOUNTS = Path("data/golden/accounts.json")
 
 
 def load_golden() -> list[dict]:

@@ -4,7 +4,7 @@
 # The deployment package is rebuilt by deploy.sh
 build/
 
-# Fixtures ARE committed: they are your measurements.
+# data/fixtures ARE committed: they are your measurements.
 
 # Python
 __pycache__/
