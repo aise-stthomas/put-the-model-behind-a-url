@@ -1,87 +1,37 @@
-"""The triage step, behind a URL.
+"""The Lambda entry point: the FastAPI app in app.py, adapted to Lambda's event shape by Mangum.
 
-This file is the whole function. It runs on AWS Lambda (handler(event, context)), and it
-runs on your laptop the same way (python src/function/handler.py, or src/function/local_server.py).
-Everything it does:
+Run this file directly to exercise exactly that path on your laptop, with no AWS: it builds
+the event a function URL would deliver and calls the handler.
 
-    check the shared token  ->  read the ticket and the account from the request body
-    ->  call the frozen triage() exactly as record.py does locally  ->  return the record,
-    plus what only the function can know: was this a cold start, how long did the
-    function itself take, how long did importing everything take.
-
-The model call, the retries and the fake provider are unchanged: src/system/triage.py and
-src/system/plumbing.py are the same files as in the project repository.
+    uv run src/function/handler.py              # fake provider unless PROVIDER=gemini
 """
 from __future__ import annotations
 
-import base64
 import json
 import os
-import time
-
 import sys
-# this file is src/function/handler.py; make the repository root importable so "src.system" resolves
-# both on your laptop and inside the deployment package, which ships src/ as-is
+
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-_T0 = time.perf_counter()
-from src.system.triage import triage  # noqa: E402  (import time is part of the cold start)
-from google import genai  # noqa: E402, F401  (force the SDK to load now, not on the first call)
+from mangum import Mangum  # noqa: E402
+from src.function.app import app  # noqa: E402
 
-INIT_MS = round((time.perf_counter() - _T0) * 1000)
-INVOCATIONS = 0   # module state survives between warm invocations of the same sandbox
-
-
-def _response(status: int, body: dict) -> dict:
-    return {"statusCode": status, "headers": {"content-type": "application/json"}, "body": json.dumps(body)}
-
-
-def handler(event: dict, context=None) -> dict:
-    global INVOCATIONS
-    started = time.perf_counter()
-    cold = INVOCATIONS == 0
-    INVOCATIONS += 1
-
-    headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
-    expected = os.environ.get("LAB_TOKEN")
-    if expected and headers.get("x-lab-token") != expected:
-        return _response(401, {"error": "bad or missing x-lab-token header"})
-
-    raw = event.get("body") or "{}"
-    if event.get("isBase64Encoded"):
-        raw = base64.b64decode(raw).decode()
-    try:
-        req = json.loads(raw)
-        ticket, account = req["ticket"], req["account"]
-    except (ValueError, KeyError, TypeError) as e:
-        return _response(400, {"error": f"body must be JSON with 'ticket' and 'account': {e}"})
-
-    provider = os.environ.get("PROVIDER", "gemini")   # PROVIDER=fake for a dry run with no key
-    try:
-        rec = triage(ticket, account, provider=provider, policy_in=req.get("policy_in", "user"))
-    except SystemExit as e:  # plumbing.py gives up on a daily cap or a dead provider
-        return _response(503, {"error": str(e)})
-
-    rec["function"] = {
-        "cold_start": cold,
-        "init_ms": INIT_MS,
-        "elapsed_ms": round((time.perf_counter() - started) * 1000),
-        "invocation": INVOCATIONS,
-        "request_id": getattr(context, "aws_request_id", None),
-    }
-    print(json.dumps({"level": "info", "cold_start": cold, "action": rec["action"],
-                      "latency_ms": rec["latency_ms"], "elapsed_ms": rec["function"]["elapsed_ms"]}))
-    return _response(200, rec)
+handler = Mangum(app, lifespan="off")
 
 
 if __name__ == "__main__":
-    # Rung 1: run the handler as a plain function, on your laptop, with the fake provider.
     os.environ.setdefault("PROVIDER", "fake")
-    event = json.load(open(os.path.join(os.path.dirname(__file__), "sample-event.json")))
+    body = open(os.path.join(os.path.dirname(__file__), "sample-event-body.json")).read()
+    headers = {"content-type": "application/json"}
     if os.environ.get("LAB_TOKEN"):  # once deploy.sh has made a token, present it, as call.sh and record.py do
-        event["headers"]["x-lab-token"] = os.environ["LAB_TOKEN"]
+        headers["x-lab-token"] = os.environ["LAB_TOKEN"]
+    event = {  # what a Lambda function URL delivers (the API Gateway v2 shape)
+        "version": "2.0", "routeKey": "$default", "rawPath": "/triage", "rawQueryString": "",
+        "headers": headers, "requestContext": {"http": {"method": "POST", "path": "/triage", "sourceIp": "127.0.0.1"}},
+        "body": body, "isBase64Encoded": False,
+    }
     out = handler(event, None)
     print(out["statusCode"])
     print(json.dumps(json.loads(out["body"]), indent=2))

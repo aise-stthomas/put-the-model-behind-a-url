@@ -2,7 +2,7 @@
 
     uv run record.py --runs 1                       # local: the model called from this process -> data/fixtures/local/
     uv run record.py --provider http --runs 3       # over HTTP: the deployed function -> data/fixtures/http/
-    uv run record.py --provider http --url http://127.0.0.1:9000 --runs 1    # the local server
+    uv run record.py --provider http --url http://127.0.0.1:9000/triage --runs 1    # the local server
     uv run record.py --provider fake --runs 1       # no key, NOT a model -> data/fixtures/fake/
     uv run record.py --provider http --name http-3s --runs 2                 # any condition, named yourself
 

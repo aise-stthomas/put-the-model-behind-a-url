@@ -39,22 +39,26 @@ Keep it; the lab's last question comes back to it.
 uv run src/function/handler.py
 ```
 
-That is the deployed function, called as a plain Python function with the fake provider.
-Read `src/function/handler.py` while it runs. It is one page: check a token, read the ticket
-and the account from the request, call `triage()` exactly as `record.py` does, and return
-the record plus what only the function can know: whether this was a cold start, how long
-importing everything took, how long the function itself took.
+That is the deployed function, exercised the way Lambda will call it, with the fake
+provider and no AWS. Read `src/function/app.py` while it runs. It is one page: a FastAPI app
+with one endpoint that checks a token, reads the ticket and the account from the request,
+calls `triage()` exactly as `record.py` does, and returns the record plus what only the
+function can know: whether this was a cold start, how long importing everything took, how
+long the function itself took. `handler.py` is the three lines that adapt the app to
+Lambda's event shape.
 
-Now serve it on a local URL and call it the way you will call the real one:
+Now serve it on a local URL, with Swagger, and call it the way you will call the real one:
 
 ```bash
-PROVIDER=fake uv run src/function/local_server.py              # terminal 1
-uv run record.py --provider http --url http://127.0.0.1:9000 --name local-url --runs 1   # terminal 2
+PROVIDER=fake uv run src/function/local_server.py              # terminal 1: http://127.0.0.1:9000/docs
+uv run record.py --provider http --url http://127.0.0.1:9000/triage --name local-url --runs 1   # terminal 2
 uv run score.py local-url
 ```
 
-Same harness, same report, the model call one HTTP hop away. Stop the server when you
-are done (Ctrl-C). Then record the real baseline in this process, with your key, so
+Open http://127.0.0.1:9000/docs, expand **POST /triage**, and send the example request
+from the browser: the same call `record.py` makes, one at a time. Same harness, same
+report, the model call one HTTP hop away. Stop the server when you are done (Ctrl-C).
+With your key in `.env` and no `PROVIDER=fake`, the same server calls the real model. Then record the real baseline in this process, with your key, so
 there is something to compare against:
 
 ```bash

@@ -54,7 +54,7 @@ echo "building the package..."
 rm -rf build && mkdir -p build/pkg
 uv pip install --quiet --target build/pkg \
   --python-platform x86_64-manylinux_2_28 --python-version 3.12 \
-  "google-genai>=2.23" "python-dotenv>=1.0"
+  "google-genai>=2.23" "python-dotenv>=1.0" "fastapi>=0.115" "mangum>=0.17"
 cp -R src build/pkg/src
 find build/pkg/src -name "__pycache__" -type d -prune -exec rm -rf {} +
 ( cd build/pkg && zip -qr ../function.zip . -x '*.pyc' -x '*/__pycache__/*' )
@@ -89,14 +89,14 @@ fi
 
 # remember the URL for record.py
 if grep -q '^LAB_URL=' .env; then
-  sed -i.bak "s|^LAB_URL=.*|LAB_URL=${URL}|" .env && rm -f .env.bak
+  sed -i.bak "s|^LAB_URL=.*|LAB_URL=${URL}triage|" .env && rm -f .env.bak
 else
-  printf 'LAB_URL=%s\n' "$URL" >> .env
+  printf 'LAB_URL=%s\n' "${URL}triage" >> .env
 fi
 
 echo
 echo "deployed: $FN   timeout ${TIMEOUT}s   memory ${MEMORY} MB"
-echo "url:      $URL   (saved to .env as LAB_URL)"
+echo "url:      ${URL}triage   (saved to .env as LAB_URL)"
 echo
 echo "try it:   ./call.sh src/function/sample-event-body.json      (curl, signed with your session credentials)"
 echo "record:   uv run record.py --provider http --runs 3"

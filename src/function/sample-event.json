@@ -1,7 +1,0 @@
-{
-  "version": "2.0",
-  "requestContext": {"http": {"method": "POST", "path": "/"}},
-  "headers": {"content-type": "application/json"},
-  "isBase64Encoded": false,
-  "body": "{\"ticket\": \"The water bottle from O-55010 leaks from the lid. I'd like a refund for it ($34).\", \"account\": {\"account_id\": \"A-11002\", \"status\": \"active\", \"tenure_months\": 9, \"recent_orders\": [{\"order_id\": \"O-55010\", \"total\": 34.0, \"items\": [\"water bottle\"]}], \"open_refunds\": 0}, \"policy_in\": \"user\"}"
-}

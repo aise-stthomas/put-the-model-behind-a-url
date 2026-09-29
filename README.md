@@ -13,7 +13,7 @@ moves.
 | | |
 |---|---|
 | **In class** | [LAB.md](LAB.md) — *put the model behind a URL* |
-| **The function** | [src/function/handler.py](src/function/handler.py) — the whole thing, one page |
+| **The function** | [src/function/app.py](src/function/app.py) — a FastAPI app, one page; `handler.py` adapts it to Lambda |
 | **The golden set** | [data/golden/README.md](data/golden/README.md) |
 
 ## What you need
@@ -34,10 +34,12 @@ git clone https://github.com/aise-stthomas/put-the-model-behind-a-url
 cd put-the-model-behind-a-url
 cp .env.example .env         # paste your Gemini key
 uv sync
-uv run src/function/handler.py   # the function, called as a plain function, with the fake provider
+uv run src/function/handler.py   # the function, through the Lambda path, with the fake provider
 ```
 
 If that printed a decision and a `"function"` block with `"cold_start": true`, you are set.
+`uv run src/function/local_server.py` serves the same app at http://127.0.0.1:9000 with
+Swagger at `/docs`.
 
 ## The loop
 
@@ -67,9 +69,10 @@ teardown.sh           deletes the function and its URL; clears build/ and the UR
 src/                  the code
   system/             the system under test, frozen. Deployed as-is.
   function/
-    handler.py        the function: token check → triage() → the record, plus cold-start and timing metadata
-    local_server.py   serves handler.py on http://127.0.0.1:9000, for testing the HTTP path with no AWS
-    sample-event.json what a function URL delivers to the handler; handler.py uses it when run directly
+    app.py            the FastAPI app: POST /triage → token check → triage() → the record, plus cold-start and timing metadata
+    handler.py        the Lambda entry point: Mangum(app); run it directly to exercise the Lambda path with no AWS
+    local_server.py   the same app on http://127.0.0.1:9000 with Swagger at /docs
+    sample-event-body.json   the example request
   harness/            golden set loader, fixtures, scorers, the report
 
 data/                 the inputs and the outputs
@@ -79,7 +82,8 @@ data/                 the inputs and the outputs
 
 ## What this is one instance of
 
-A serverless function with a URL is one placement for a model call: **asynchronous
+The app is FastAPI so the same code runs under uvicorn on a laptop and under Mangum on
+Lambda. A serverless function with a URL is one placement for a model call: **asynchronous
 capacity you rent by the millisecond**, with a cold start when a sandbox is new and a hard
 time limit when it runs long. The vendor, the runtime and the CLI flags are September 2026
 details. What does not change: the harness does not care where the model runs, so it can
