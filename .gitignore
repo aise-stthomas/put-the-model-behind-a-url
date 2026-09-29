@@ -1,0 +1,14 @@
+# Secrets and the deployed URL live in .env, never in a commit
+.env
+
+# The deployment package is rebuilt by deploy.sh
+build/
+
+# Fixtures ARE committed: they are your measurements.
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.DS_Store

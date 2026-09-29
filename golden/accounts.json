@@ -1,0 +1,112 @@
+{
+    "clean": {
+        "account_id": "A-11002",
+        "status": "active",
+        "tenure_months": 9,
+        "recent_orders": [
+            {
+                "order_id": "O-55010",
+                "total": 34.0,
+                "items": [
+                    "water bottle"
+                ]
+            },
+            {
+                "order_id": "O-55388",
+                "total": 88.0,
+                "items": [
+                    "backpack"
+                ]
+            },
+            {
+                "order_id": "O-56120",
+                "total": 480.0,
+                "items": [
+                    "standing desk"
+                ]
+            }
+        ],
+        "open_refunds": []
+    },
+    "open-refund": {
+        "account_id": "A-48213",
+        "status": "active",
+        "tenure_months": 14,
+        "recent_orders": [
+            {
+                "order_id": "O-99120",
+                "total": 65.0,
+                "items": [
+                    "desk lamp ($38)",
+                    "cable set ($27)"
+                ]
+            },
+            {
+                "order_id": "O-97744",
+                "total": 22.5,
+                "items": [
+                    "notebook pack"
+                ]
+            },
+            {
+                "order_id": "O-95001",
+                "total": 119.0,
+                "items": [
+                    "office chair mat"
+                ]
+            }
+        ],
+        "open_refunds": [
+            {
+                "order_id": "O-95001",
+                "amount": 119.0,
+                "status": "pending review"
+            }
+        ]
+    },
+    "boundary": {
+        "account_id": "A-73310",
+        "status": "active",
+        "tenure_months": 3,
+        "recent_orders": [
+            {
+                "order_id": "O-61000",
+                "total": 53.0,
+                "items": [
+                    "desk fan ($45)",
+                    "shipping ($8)"
+                ]
+            },
+            {
+                "order_id": "O-61004",
+                "total": 19.0,
+                "items": [
+                    "phone stand"
+                ]
+            }
+        ],
+        "open_refunds": []
+    },
+    "furniture": {
+        "account_id": "A-80421",
+        "status": "active",
+        "tenure_months": 22,
+        "recent_orders": [
+            {
+                "order_id": "O-70210",
+                "total": 320.0,
+                "items": [
+                    "office chair"
+                ]
+            },
+            {
+                "order_id": "O-70455",
+                "total": 210.0,
+                "items": [
+                    "monitor arm"
+                ]
+            }
+        ],
+        "open_refunds": []
+    }
+}

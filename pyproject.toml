@@ -1,0 +1,12 @@
+[project]
+name = "put-the-model-behind-a-url"
+version = "0.1.0"
+description = "AI Systems Engineering lab: deploy the triage step as a function behind a URL, and measure what changed."
+requires-python = ">=3.12"
+dependencies = [
+    "google-genai>=2.23",
+    "python-dotenv>=1.0",
+]
+
+[tool.uv]
+package = false
