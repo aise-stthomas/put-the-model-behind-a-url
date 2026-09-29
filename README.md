@@ -3,8 +3,8 @@
 The support-ticket triage step has been a function call inside your own process. In this
 lab it goes behind a URL, on a serverless function in your AWS Academy Learner Lab, and you
 measure what changed. Three numbers at the end: **cold start**, **warm latency at the
-95th percentile**, and **what the platform's time limit does** to a call that is waiting
-on a model.
+95th percentile**, and **what the platform's time limit does** to a call that is still
+waiting on a model.
 
 The system under test is unchanged: `system/triage.py` is the same frozen file as in the
 project repository, and the harness scores its outputs the same way. Only where it runs
@@ -49,7 +49,8 @@ uv run latency.py http                      # cold start · warm p50 and p95 · 
 ```
 
 `record.py` writes one line per call as it lands and never repeats a call it already has,
-so a rerun continues where it stopped. Over HTTP every record carries two clocks: the
+so a rerun continues where it stopped. Calls to the deployed URL are signed with your AWS
+session credentials, because the Learner Lab does not allow anonymous function URLs. Over HTTP every record carries two clocks: the
 model's own latency, measured inside the function, and the whole round trip, measured
 from your laptop.
 
@@ -61,6 +62,7 @@ function/
   local_server.py     serves handler.py on http://127.0.0.1:9000, for testing the HTTP path with no AWS
   sample-event.json   what a function URL delivers to the handler; handler.py uses it when run directly
 deploy.sh             builds the zip for Lambda's Linux, creates or updates the function, sets the URL
+call.sh               one signed curl to the deployed function
 teardown.sh           deletes the function and its URL
 record.py             CLI: run the suite, in this process or over HTTP; saves every call
 score.py              CLI: reads the fixtures and reports, per slice; never calls a model

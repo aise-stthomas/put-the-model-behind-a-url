@@ -77,13 +77,15 @@ else
   aws lambda wait function-active --function-name "$FN"
 fi
 
-# --- the URL ---------------------------------------------------------------------------
+# --- the URL: IAM-authenticated. The Learner Lab blocks anonymous function URLs (a public
+# --- URL answers 403 whatever the resource policy says), so callers sign requests with the
+# --- same session credentials this script used. record.py does that for you.
 URL="$(aws lambda get-function-url-config --function-name "$FN" --query FunctionUrl --output text 2>/dev/null || true)"
 if [ -z "$URL" ] || [ "$URL" = "None" ]; then
-  URL="$(aws lambda create-function-url-config --function-name "$FN" --auth-type NONE --query FunctionUrl --output text)"
+  URL="$(aws lambda create-function-url-config --function-name "$FN" --auth-type AWS_IAM --query FunctionUrl --output text)"
+else
+  aws lambda update-function-url-config --function-name "$FN" --auth-type AWS_IAM >/dev/null
 fi
-aws lambda add-permission --function-name "$FN" --statement-id public-url \
-  --action lambda:InvokeFunctionUrl --principal '*' --function-url-auth-type NONE >/dev/null 2>&1 || true
 
 # remember the URL for record.py
 if grep -q '^LAB_URL=' .env; then
@@ -96,6 +98,6 @@ echo
 echo "deployed: $FN   timeout ${TIMEOUT}s   memory ${MEMORY} MB"
 echo "url:      $URL   (saved to .env as LAB_URL)"
 echo
-echo "try it:   curl -s -X POST \"\$LAB_URL\" -H \"x-lab-token: \$LAB_TOKEN\" -H 'content-type: application/json' -d @function/sample-event-body.json"
+echo "try it:   ./call.sh function/sample-event-body.json      (curl, signed with your session credentials)"
 echo "record:   uv run record.py --provider http --runs 3"
 echo "logs:     aws logs tail /aws/lambda/$FN --follow"

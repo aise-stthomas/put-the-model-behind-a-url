@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "AI Systems Engineering lab: deploy the triage step as a function behind a URL, and measure what changed."
 requires-python = ">=3.12"
 dependencies = [
+    "botocore>=1.43.104",
     "google-genai>=2.23",
     "python-dotenv>=1.0",
 ]

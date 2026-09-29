@@ -3,7 +3,7 @@
 The triage step has been a function call in your own process. Tonight it goes behind a
 URL, on a serverless function in your Learner Lab, and you measure what changed. Write
 down three numbers by the end: **cold start**, **warm latency at the 95th percentile**,
-and **what a 3-second time limit does**.
+and **what a time limit below the model's latency does**.
 
 **What this lab shows.**
 
@@ -75,12 +75,13 @@ pre-made role with a 30-second time limit and 512 MB, gives it a URL, and saves 
 and a shared token to `.env`. About a minute. Then:
 
 ```bash
-curl -s -X POST "$(grep LAB_URL .env | cut -d= -f2)" \
-  -H "x-lab-token: $(grep LAB_TOKEN .env | cut -d= -f2)" \
-  -H 'content-type: application/json' -d @function/sample-event-body.json
+./call.sh function/sample-event-body.json
 ```
 
-A decision, from a machine that is not yours, with your key on it and not in the request.
+A decision, from a machine that is not yours, with your Gemini key on it and not in the
+request. The URL is not public: the Learner Lab refuses anonymous function URLs, so every
+call is signed with the same AWS session credentials `deploy.sh` used (`call.sh` and
+`record.py` do the signing). The `x-lab-token` header is a second lock of your own.
 
 ## Part 3: call it, and score it
 
@@ -118,25 +119,39 @@ else? Which of the two would a bigger function, or a closer region, change?
 
 ## Part 5: kill it
 
-Lambda's default time limit is three seconds. A model call takes two to six. Set the
-limit to the default and record again:
+The function's time limit is a number you set; the platform enforces it by killing the
+sandbox mid-call. The model's own latency here is under a second warm, so set the limit
+**below** it and record:
 
 ```bash
-./deploy.sh --timeout 3
-uv run record.py --provider http --name http-3s --runs 2
-uv run latency.py http-3s
-uv run score.py http http-3s
+./deploy.sh --timeout 1
+uv run record.py --provider http --name http-1s --runs 1
+uv run latency.py http-1s
+uv run score.py http http-1s
 ```
 
-Some calls come back as `error`. Look at one in `fixtures/http-3s/run-1.jsonl`: what is
-in the record, and what is not? The function was killed mid-call; the model may well
-have answered into the void; the money it proposed is nowhere.
+Every call comes back as `error`, and not after one second: the platform killed the
+function at one second, and the URL layer took another second or so to tell you. Look at
+one record in `fixtures/http-1s/run-1.jsonl`: what is in it, and what is not? The model
+may well have answered into the void; the money it proposed is nowhere.
+
+Now set the limit from your measurement instead of from a default: take the warm p95
+from Part 4, round it up to whole seconds, and add one.
+
+```bash
+./deploy.sh --timeout 2          # or whatever your p95 said
+uv run record.py --provider http --name http-p95 --runs 1
+uv run latency.py http-p95
+```
+
+Most calls survive; the ones that do not are the tail. That is what a time limit is for:
+a decision about how much of the tail you will pay for, made from a number you measured.
 
 Then the design question, in two sentences: **what should a system record for a call
 that died at the time limit, and what should it do next?** "Retry" is a fine start; say
 what a retry costs when the call had a consequence.
 
-Restore the limit before you leave, or leave the function deleted:
+Restore the limit before you leave, or remove the function:
 
 ```bash
 ./deploy.sh                    # back to 30 s
@@ -145,7 +160,7 @@ Restore the limit before you leave, or leave the function deleted:
 
 ## Keep
 
-- the three numbers: cold start, warm p95, and the error rate at a 3-second limit
+- the three numbers: cold start, warm p95, and the error rate at a 1-second limit
 - your Part 0 sheet, with one line added: at the busy hour, would this function's quota
   and its cold starts have mattered?
 - the repository, with its fixtures
@@ -158,6 +173,7 @@ Restore the limit before you leave, or leave the function deleted:
 | `AccessDenied` on `create-function` | The role name is not `LabRole` in your account. Run `aws iam list-roles --query 'Roles[].RoleName'` and set `ROLE` in `deploy.sh`. |
 | `Runtime.ImportModuleError` in the response | A dependency was installed for the wrong platform. `rm -rf build` and run `./deploy.sh` again; it must be built with the `--python-platform` flag, which the script sets. |
 | `HTTP 401` from `record.py` | The token in `.env` does not match the function's. `./deploy.sh` again; it re-sets both. |
+| `HTTP 403` on every call | The request was not signed, or the session credentials behind the signature expired. Start a session, paste credentials, run again. A plain `curl` without `--aws-sigv4` always gets 403 here. |
 | `HTTP 502` or `503` on every call | The function is crashing before it answers. `aws logs tail /aws/lambda/triage-url --since 10m` shows the traceback. |
-| `rate limited; sleeping` inside the function | Normal on the free tier; the function waits, so the round trip grows. With a 3-second limit it will die instead. |
+| `rate limited; sleeping` inside the function | Normal on the free tier; the function waits, so the round trip grows. With a short time limit it will die instead. |
 | The zip is over 50 MB | Something extra got into `build/pkg`. It should be about 10 MB zipped. |

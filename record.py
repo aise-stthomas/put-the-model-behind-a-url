@@ -12,7 +12,9 @@ call lands. Resumable: a call already in the file is never made again.
 
 Over HTTP every record carries two clocks: the model's own latency, measured inside the
 function, and client_ms, the whole round trip measured here. A call that died at the
-function's time limit is recorded too, as action "error".
+function's time limit is recorded too, as action "error". Calls to a deployed function
+URL are signed with your AWS session credentials (the Learner Lab does not allow
+anonymous function URLs); a local server needs no signature.
 """
 from __future__ import annotations
 
@@ -31,11 +33,40 @@ from system import DEFAULT_MODEL, triage
 load_dotenv()
 
 
+def _signer():
+    """SigV4 for a function URL with IAM auth: the same credentials deploy.sh used, from
+    ~/.aws/credentials. Returns None when there are none (a local server needs no signature)."""
+    try:
+        import botocore.session
+        from botocore.auth import SigV4Auth
+        from botocore.awsrequest import AWSRequest
+    except ImportError:
+        return None
+    creds = botocore.session.get_session().get_credentials()
+    if creds is None:
+        return None
+    auth = SigV4Auth(creds, "lambda", os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
+
+    def sign(url: str, body: bytes, headers: dict) -> dict:
+        req = AWSRequest(method="POST", url=url, data=body, headers=headers)
+        auth.add_auth(req)
+        return dict(req.headers)
+    return sign
+
+
+_SIGN = None
+
+
 def call_http(url: str, token: str | None, ticket: str, account: dict, policy_in: str, timeout: float) -> dict:
+    global _SIGN
     body = json.dumps({"ticket": ticket, "account": account, "policy_in": policy_in}).encode()
     headers = {"content-type": "application/json"}
     if token:
         headers["x-lab-token"] = token
+    if "lambda-url" in url:           # a deployed function: sign it (Learner Lab URLs require IAM auth)
+        if _SIGN is None:
+            _SIGN = _signer() or (lambda u, b, h: h)
+        headers = _SIGN(url, body, headers)
     req = urllib.request.Request(url, data=body, headers=headers, method="POST")
     t0 = time.perf_counter()
     try:
