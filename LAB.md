@@ -47,24 +47,34 @@ function can know: whether this was a cold start, how long importing everything 
 long the function itself took. `handler.py` is the three lines that adapt the app to
 Lambda's event shape.
 
-Now serve it on a local URL, with Swagger, and call it the way you will call the real one:
+Now serve it on a local URL, with the real model and your key from `.env`:
 
 ```bash
-PROVIDER=fake uv run src/function/local_server.py              # terminal 1: http://127.0.0.1:9000/docs
+uv run src/function/local_server.py          # terminal 1: http://127.0.0.1:9000/docs
+```
+
+Open http://127.0.0.1:9000/docs, expand **POST /triage**, press **Try it out**, and send
+the example request from the browser. That is one real model call, through the web
+service, one at a time. No token is needed locally; only the deployed function checks
+one. (No key yet? `PROVIDER=fake uv run src/function/local_server.py` serves a stand-in
+that is not a model.)
+
+Then run the whole suite through it, and the baseline in-process, and compare:
+
+```bash
 uv run record.py --provider http --url http://127.0.0.1:9000/triage --name local-url --runs 1   # terminal 2
-uv run score.py local-url
+uv run record.py --runs 1                                                                      # in-process → data/fixtures/local/
+uv run score.py local local-url
+uv run latency.py local-url
 ```
 
-Open http://127.0.0.1:9000/docs, expand **POST /triage**, and send the example request
-from the browser: the same call `record.py` makes, one at a time. No token is needed
-locally; only the deployed function checks one. Same harness, same
-report, the model call one HTTP hop away. Stop the server when you are done (Ctrl-C).
-With your key in `.env` and no `PROVIDER=fake`, the same server calls the real model. Then record the real baseline in this process, with your key, so
-there is something to compare against:
+Same harness, same report, the model call one HTTP hop away: the verdict is *no change*
+or *cannot tell* on every slice. The latency report shows the round trip beside the
+model's own latency; the difference is what the hop costs on one machine. Stop the
+server when you are done (Ctrl-C).
 
-```bash
-uv run record.py --runs 1          # 10 calls, in this process → data/fixtures/local/
-```
+**If the Learner Lab is unavailable**, this is the lab: Parts 0 and 1, and the Part 5
+question on paper. Parts 2 to 5 wait for a session.
 
 ## Part 2: deploy it
 
