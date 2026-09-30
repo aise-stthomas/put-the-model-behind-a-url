@@ -65,8 +65,8 @@ if aws lambda get-function --function-name "$FN" >/dev/null 2>&1; then
   echo "updating $FN..."
   aws lambda update-function-code --function-name "$FN" --zip-file "fileb://build/function.zip" >/dev/null
   aws lambda wait function-updated --function-name "$FN"
-  aws lambda update-function-configuration --function-name "$FN" \
-    --timeout "$TIMEOUT" --memory-size "$MEMORY" --environment "$ENV_VARS" >/dev/null
+  aws lambda update-function-configuration --function-name "$FN" --handler src.function.handler.handler \
+    --runtime python3.12 --timeout "$TIMEOUT" --memory-size "$MEMORY" --environment "$ENV_VARS" >/dev/null
   aws lambda wait function-updated --function-name "$FN"
 else
   echo "creating $FN as $ROLE..."
